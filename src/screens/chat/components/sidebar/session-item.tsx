@@ -6,6 +6,7 @@ import {
   MoreHorizontalIcon,
   Pen01Icon,
   Delete01Icon,
+  Upload01Icon,
 } from '@hugeicons/core-free-icons'
 import { cn } from '@/lib/utils'
 import {
@@ -23,6 +24,7 @@ type SessionItemProps = {
   onSelect?: () => void
   onRename: (session: SessionMeta) => void
   onDelete: (session: SessionMeta) => void
+  onExport: (session: SessionMeta) => void
 }
 
 function SessionItemComponent({
@@ -31,6 +33,7 @@ function SessionItemComponent({
   onSelect,
   onRename,
   onDelete,
+  onExport,
 }: SessionItemProps) {
   const label =
     session.label || session.title || session.derivedTitle || session.friendlyId
@@ -87,6 +90,17 @@ function SessionItemComponent({
             onClick={(event) => {
               event.preventDefault()
               event.stopPropagation()
+              onExport(session)
+            }}
+            className="gap-2"
+          >
+            <HugeiconsIcon icon={Upload01Icon} size={20} strokeWidth={1.5} />{' '}
+            Export
+          </MenuItem>
+          <MenuItem
+            onClick={(event) => {
+              event.preventDefault()
+              event.stopPropagation()
               onDelete(session)
             }}
             className="text-red-700 gap-2 hover:bg-red-50/80 data-highlighted:bg-red-50/80"
@@ -105,6 +119,7 @@ function areSessionItemsEqual(prev: SessionItemProps, next: SessionItemProps) {
   if (prev.onSelect !== next.onSelect) return false
   if (prev.onRename !== next.onRename) return false
   if (prev.onDelete !== next.onDelete) return false
+  if (prev.onExport !== next.onExport) return false
   if (prev.session === next.session) return true
   return (
     prev.session.key === next.session.key &&

@@ -18,6 +18,7 @@ type SidebarSessionsProps = {
   onSelect?: () => void
   onRename: (session: SessionMeta) => void
   onDelete: (session: SessionMeta) => void
+  onExport: (session: SessionMeta) => void
 }
 
 export const SidebarSessions = memo(function SidebarSessions({
@@ -27,6 +28,7 @@ export const SidebarSessions = memo(function SidebarSessions({
   onSelect,
   onRename,
   onDelete,
+  onExport,
 }: SidebarSessionsProps) {
   return (
     <Collapsible
@@ -56,6 +58,7 @@ export const SidebarSessions = memo(function SidebarSessions({
                 onSelect={onSelect}
                 onRename={onRename}
                 onDelete={onDelete}
+                onExport={onExport}
               />
             ))}
           </div>
@@ -74,6 +77,7 @@ function areSidebarSessionsEqual(
   if (prev.onSelect !== next.onSelect) return false
   if (prev.onRename !== next.onRename) return false
   if (prev.onDelete !== next.onDelete) return false
+  if (prev.onExport !== next.onExport) return false
   if (prev.sessions === next.sessions) return true
   if (prev.sessions.length !== next.sessions.length) return false
   for (let i = 0; i < prev.sessions.length; i += 1) {

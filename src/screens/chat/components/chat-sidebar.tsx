@@ -8,6 +8,11 @@ import { AnimatePresence, motion } from 'motion/react'
 import { memo, useState } from 'react'
 import { SettingsDialog } from './settings-dialog'
 import type { SessionMeta } from '../types'
+import { useQueryClient } from '@tanstack/react-query'
+import { chatQueryKeys } from '../chat-queries'
+import type { HistoryResponse } from '../types'
+import { exportConversation, type ExportFormat } from '../utils/export-conversation'
+import { SessionExportDialog } from './sidebar/session-export-dialog'
 import {
   TooltipContent,
   TooltipProvider,
@@ -73,6 +78,13 @@ function ChatSidebarComponent({
   const [deleteFriendlyId, setDeleteFriendlyId] = useState<string | null>(null)
   const [deleteSessionTitle, setDeleteSessionTitle] = useState('')
 
+  const [exportDialogOpen, setExportDialogOpen] = useState(false)
+  const [exportSessionKey, setExportSessionKey] = useState<string | null>(null)
+  const [exportFriendlyId, setExportFriendlyId] = useState<string | null>(null)
+  const [exportSessionTitle, setExportSessionTitle] = useState('')
+
+  const queryClient = useQueryClient()
+
   function handleOpenRename(session: SessionMeta) {
     setRenameSessionKey(session.key)
     setRenameSessionTitle(
@@ -112,6 +124,38 @@ function ChatSidebarComponent({
     setDeleteDialogOpen(false)
     setDeleteSessionKey(null)
     setDeleteFriendlyId(null)
+  }
+
+  function handleOpenExport(session: SessionMeta) {
+    setExportSessionKey(session.key)
+    setExportFriendlyId(session.friendlyId)
+    setExportSessionTitle(
+      session.label ||
+        session.title ||
+        session.derivedTitle ||
+        session.friendlyId,
+    )
+    setExportDialogOpen(true)
+  }
+
+  function handleExport(format: ExportFormat) {
+    if (exportSessionKey && exportFriendlyId) {
+      // Get messages from the query cache
+      const historyKey = chatQueryKeys.history(
+        exportFriendlyId,
+        exportSessionKey,
+      )
+      const historyData = queryClient.getQueryData(historyKey) as
+        | HistoryResponse
+        | undefined
+
+      if (historyData?.messages) {
+        exportConversation(exportSessionTitle, historyData.messages, format)
+      }
+    }
+    setExportDialogOpen(false)
+    setExportSessionKey(null)
+    setExportFriendlyId(null)
   }
 
   const asideProps = {
@@ -228,6 +272,7 @@ function ChatSidebarComponent({
                   onSelect={onSelectSession}
                   onRename={handleOpenRename}
                   onDelete={handleOpenDelete}
+                  onExport={handleOpenExport}
                 />
               </div>
             </motion.div>
@@ -296,6 +341,14 @@ function ChatSidebarComponent({
         sessionTitle={deleteSessionTitle}
         onConfirm={handleConfirmDelete}
         onCancel={() => setDeleteDialogOpen(false)}
+      />
+
+      <SessionExportDialog
+        open={exportDialogOpen}
+        onOpenChange={setExportDialogOpen}
+        sessionTitle={exportSessionTitle}
+        onExport={handleExport}
+        onCancel={() => setExportDialogOpen(false)}
       />
     </motion.aside>
   )
