@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
   Cancel01Icon,
@@ -5,6 +6,9 @@ import {
   Moon01Icon,
   Sun01Icon,
   Leaf01Icon,
+  Tick01Icon,
+  Cancel02Icon,
+  Loading02Icon,
 } from '@hugeicons/core-free-icons'
 import type { PathsPayload } from '../types'
 import {
@@ -19,6 +23,7 @@ import { Tabs, TabsList, TabsTab } from '@/components/ui/tabs'
 import { useChatSettings } from '@/hooks/use-chat-settings'
 import type { ThemeMode } from '@/hooks/use-chat-settings'
 import { Button } from '@/components/ui/button'
+import { useLlmSettings } from '@/hooks/use-llm-settings'
 
 type SettingsSectionProps = {
   title: string
@@ -71,6 +76,43 @@ export function SettingsDialog({
   onClose,
 }: SettingsDialogProps) {
   const { settings, updateSettings } = useChatSettings()
+  const {
+    settings: llmSettings,
+    updateSettings: updateLlmSettings,
+    status: llmStatus,
+    testApiKey,
+  } = useLlmSettings()
+
+  const [apiKeyInput, setApiKeyInput] = useState(llmSettings.openaiApiKey)
+  const [testingKey, setTestingKey] = useState(false)
+  const [testResult, setTestResult] = useState<{ valid: boolean; error?: string } | null>(null)
+
+  const handleTestApiKey = async () => {
+    if (!apiKeyInput.trim()) return
+    setTestingKey(true)
+    setTestResult(null)
+    try {
+      const result = await testApiKey(apiKeyInput.trim())
+      setTestResult(result)
+      if (result.valid) {
+        updateLlmSettings({ openaiApiKey: apiKeyInput.trim() })
+      }
+    } finally {
+      setTestingKey(false)
+    }
+  }
+
+  const handleSaveApiKey = () => {
+    updateLlmSettings({ openaiApiKey: apiKeyInput.trim() })
+    setTestResult(null)
+  }
+
+  const handleClearApiKey = () => {
+    setApiKeyInput('')
+    updateLlmSettings({ openaiApiKey: '' })
+    setTestResult(null)
+  }
+
   const themeOptions = [
     { value: 'system', label: 'System', icon: ComputerIcon },
     { value: 'light', label: 'Light', icon: Sun01Icon },
@@ -172,6 +214,123 @@ export function SettingsDialog({
                 }
               />
             </SettingsRow>
+          </SettingsSection>
+
+          <SettingsSection title="LLM Features">
+            <div className="text-xs text-primary-500 mb-3">
+              Enhance session titles and follow-up suggestions using OpenAI API.
+              {llmStatus.hasEnvKey && (
+                <span className="block mt-1 text-green-600">
+                  ✓ Server has OPENAI_API_KEY configured
+                </span>
+              )}
+            </div>
+
+            <SettingsRow
+              label="Smart session titles"
+              description="Generate concise titles using AI"
+            >
+              <Switch
+                checked={llmSettings.useLlmTitles}
+                onCheckedChange={(checked) =>
+                  updateLlmSettings({ useLlmTitles: checked })
+                }
+                disabled={!llmStatus.isAvailable}
+              />
+            </SettingsRow>
+
+            <SettingsRow
+              label="Smart follow-up suggestions"
+              description="AI-generated contextual follow-ups"
+            >
+              <Switch
+                checked={llmSettings.useLlmFollowUps}
+                onCheckedChange={(checked) =>
+                  updateLlmSettings({ useLlmFollowUps: checked })
+                }
+                disabled={!llmStatus.isAvailable}
+              />
+            </SettingsRow>
+
+            <div className="mt-4 pt-3 border-t border-primary-100">
+              <div className="text-sm text-primary-800 mb-2">OpenAI API Key</div>
+              <div className="text-xs text-primary-500 mb-2">
+                {llmStatus.hasEnvKey
+                  ? 'Optional: Override server key with your own'
+                  : 'Required for LLM features (stored locally)'}
+              </div>
+              <div className="flex gap-2">
+                <input
+                  type="password"
+                  value={apiKeyInput}
+                  onChange={(e) => {
+                    setApiKeyInput(e.target.value)
+                    setTestResult(null)
+                  }}
+                  placeholder="sk-..."
+                  className="flex-1 px-3 py-1.5 text-sm rounded-md border border-primary-200 bg-surface focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleTestApiKey}
+                  disabled={!apiKeyInput.trim() || testingKey}
+                  className="min-w-[60px]"
+                >
+                  {testingKey ? (
+                    <HugeiconsIcon
+                      icon={Loading02Icon}
+                      size={16}
+                      className="animate-spin"
+                    />
+                  ) : (
+                    'Test'
+                  )}
+                </Button>
+              </div>
+
+              {testResult && (
+                <div
+                  className={`mt-2 flex items-center gap-1.5 text-xs ${
+                    testResult.valid ? 'text-green-600' : 'text-red-600'
+                  }`}
+                >
+                  <HugeiconsIcon
+                    icon={testResult.valid ? Tick01Icon : Cancel02Icon}
+                    size={14}
+                  />
+                  {testResult.valid ? 'API key is valid' : testResult.error || 'Invalid API key'}
+                </div>
+              )}
+
+              {llmSettings.openaiApiKey && (
+                <div className="mt-2 flex items-center justify-between">
+                  <span className="text-xs text-green-600 flex items-center gap-1">
+                    <HugeiconsIcon icon={Tick01Icon} size={14} />
+                    Key saved
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={handleClearApiKey}
+                    className="text-xs text-red-600 hover:text-red-700 hover:bg-red-50"
+                  >
+                    Clear
+                  </Button>
+                </div>
+              )}
+
+              {apiKeyInput && apiKeyInput !== llmSettings.openaiApiKey && !testResult?.valid && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleSaveApiKey}
+                  className="mt-2 w-full"
+                >
+                  Save without testing
+                </Button>
+              )}
+            </div>
           </SettingsSection>
 
           <SettingsSection title="About">

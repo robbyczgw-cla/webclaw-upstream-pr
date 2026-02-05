@@ -18,6 +18,7 @@ import { Route as ApiSendRouteImport } from './routes/api/send'
 import { Route as ApiPingRouteImport } from './routes/api/ping'
 import { Route as ApiPathsRouteImport } from './routes/api/paths'
 import { Route as ApiModelsRouteImport } from './routes/api/models'
+import { Route as ApiLlmFeaturesRouteImport } from './routes/api/llm-features'
 import { Route as ApiHistoryRouteImport } from './routes/api/history'
 import { Route as ApiFollowUpsRouteImport } from './routes/api/follow-ups'
 
@@ -66,6 +67,11 @@ const ApiModelsRoute = ApiModelsRouteImport.update({
   path: '/api/models',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiLlmFeaturesRoute = ApiLlmFeaturesRouteImport.update({
+  id: '/api/llm-features',
+  path: '/api/llm-features',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiHistoryRoute = ApiHistoryRouteImport.update({
   id: '/api/history',
   path: '/api/history',
@@ -83,6 +89,7 @@ export interface FileRoutesByFullPath {
   '/new': typeof NewRoute
   '/api/follow-ups': typeof ApiFollowUpsRoute
   '/api/history': typeof ApiHistoryRoute
+  '/api/llm-features': typeof ApiLlmFeaturesRoute
   '/api/models': typeof ApiModelsRoute
   '/api/paths': typeof ApiPathsRoute
   '/api/ping': typeof ApiPingRoute
@@ -96,6 +103,7 @@ export interface FileRoutesByTo {
   '/new': typeof NewRoute
   '/api/follow-ups': typeof ApiFollowUpsRoute
   '/api/history': typeof ApiHistoryRoute
+  '/api/llm-features': typeof ApiLlmFeaturesRoute
   '/api/models': typeof ApiModelsRoute
   '/api/paths': typeof ApiPathsRoute
   '/api/ping': typeof ApiPingRoute
@@ -110,6 +118,7 @@ export interface FileRoutesById {
   '/new': typeof NewRoute
   '/api/follow-ups': typeof ApiFollowUpsRoute
   '/api/history': typeof ApiHistoryRoute
+  '/api/llm-features': typeof ApiLlmFeaturesRoute
   '/api/models': typeof ApiModelsRoute
   '/api/paths': typeof ApiPathsRoute
   '/api/ping': typeof ApiPingRoute
@@ -125,6 +134,7 @@ export interface FileRouteTypes {
     | '/new'
     | '/api/follow-ups'
     | '/api/history'
+    | '/api/llm-features'
     | '/api/models'
     | '/api/paths'
     | '/api/ping'
@@ -138,6 +148,7 @@ export interface FileRouteTypes {
     | '/new'
     | '/api/follow-ups'
     | '/api/history'
+    | '/api/llm-features'
     | '/api/models'
     | '/api/paths'
     | '/api/ping'
@@ -151,6 +162,7 @@ export interface FileRouteTypes {
     | '/new'
     | '/api/follow-ups'
     | '/api/history'
+    | '/api/llm-features'
     | '/api/models'
     | '/api/paths'
     | '/api/ping'
@@ -165,6 +177,7 @@ export interface RootRouteChildren {
   NewRoute: typeof NewRoute
   ApiFollowUpsRoute: typeof ApiFollowUpsRoute
   ApiHistoryRoute: typeof ApiHistoryRoute
+  ApiLlmFeaturesRoute: typeof ApiLlmFeaturesRoute
   ApiModelsRoute: typeof ApiModelsRoute
   ApiPathsRoute: typeof ApiPathsRoute
   ApiPingRoute: typeof ApiPingRoute
@@ -238,6 +251,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiModelsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/llm-features': {
+      id: '/api/llm-features'
+      path: '/api/llm-features'
+      fullPath: '/api/llm-features'
+      preLoaderRoute: typeof ApiLlmFeaturesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/history': {
       id: '/api/history'
       path: '/api/history'
@@ -261,6 +281,7 @@ const rootRouteChildren: RootRouteChildren = {
   NewRoute: NewRoute,
   ApiFollowUpsRoute: ApiFollowUpsRoute,
   ApiHistoryRoute: ApiHistoryRoute,
+  ApiLlmFeaturesRoute: ApiLlmFeaturesRoute,
   ApiModelsRoute: ApiModelsRoute,
   ApiPathsRoute: ApiPathsRoute,
   ApiPingRoute: ApiPingRoute,

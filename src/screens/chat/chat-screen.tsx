@@ -24,6 +24,7 @@ import {
   removeHistoryMessageByClientId,
   updateHistoryMessageByClientId,
   updateSessionLastMessage,
+  updateSessionLabel,
 } from './chat-queries'
 import { chatUiQueryKey, getChatUiState, setChatUiState } from './chat-ui'
 import { ChatSidebar } from './components/chat-sidebar'
@@ -46,6 +47,7 @@ import { useChatMeasurements } from './hooks/use-chat-measurements'
 import { useChatHistory } from './hooks/use-chat-history'
 import { useChatMobile } from './hooks/use-chat-mobile'
 import { useChatSessions } from './hooks/use-chat-sessions'
+import { useSmartTitle, useLlmTitlesEnabled } from './hooks/use-smart-title'
 import type { ChatComposerHelpers } from './components/chat-composer'
 import type { HistoryResponse } from './types'
 import { cn } from '@/lib/utils'
@@ -171,6 +173,11 @@ export function ChatScreen({
     setPendingGeneration(false)
     setWaitingForResponse(false)
   }, [streamStop])
+
+  // Smart title generation
+  const llmTitlesEnabled = useLlmTitlesEnabled()
+  const { generateTitle } = useSmartTitle()
+  const titleGeneratedRef = useRef<Set<string>>(new Set())
   const streamStart = useCallback(() => {
     if (!activeFriendlyId || isNewChat) return
     if (streamTimer.current) window.clearInterval(streamTimer.current)
@@ -281,6 +288,59 @@ export function ChatScreen({
       }, 4000)
     }
   }, [historyMessages, streamFinish])
+
+  // Smart title generation effect
+  // Triggers after first assistant response in a session
+  useEffect(() => {
+    // Skip if LLM titles are disabled
+    if (!llmTitlesEnabled) return
+    // Skip if new chat or redirecting
+    if (isNewChat || isRedirecting) return
+    // Skip if no session key
+    const sessionKey = forcedSessionKey || resolvedSessionKey || activeSessionKey
+    if (!sessionKey) return
+    // Skip if already generated title for this session
+    if (titleGeneratedRef.current.has(sessionKey)) return
+
+    // Check if we have at least one user message and one assistant response
+    const userMessages = historyMessages.filter((m) => m.role === 'user')
+    const assistantMessages = historyMessages.filter((m) => m.role === 'assistant')
+    
+    if (userMessages.length === 0 || assistantMessages.length === 0) return
+
+    // Only generate title for the first exchange (session just started)
+    if (userMessages.length !== 1) return
+
+    // Get the first user message text
+    const firstUserMessage = textFromMessage(userMessages[0])
+    if (!firstUserMessage || firstUserMessage.length < 5) return
+
+    // Mark as generated to prevent duplicate calls
+    titleGeneratedRef.current.add(sessionKey)
+
+    // Generate and update title asynchronously
+    void (async () => {
+      try {
+        const result = await generateTitle(firstUserMessage)
+        if (result.title) {
+          await updateSessionLabel(queryClient, sessionKey, activeFriendlyId, result.title)
+        }
+      } catch (err) {
+        console.error('[smart-title] Error generating title:', err)
+      }
+    })()
+  }, [
+    llmTitlesEnabled,
+    isNewChat,
+    isRedirecting,
+    forcedSessionKey,
+    resolvedSessionKey,
+    activeSessionKey,
+    activeFriendlyId,
+    historyMessages,
+    generateTitle,
+    queryClient,
+  ])
 
   useEffect(() => {
     const resetKey = isNewChat ? 'new' : activeFriendlyId

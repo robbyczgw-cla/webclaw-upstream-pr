@@ -1,15 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
-import {
-  fetchFollowUpSuggestions,
-  getHeuristicFollowUpTexts,
-} from '../lib/follow-up-generator'
+import { getHeuristicFollowUpTexts } from '../lib/follow-up-generator'
+import { useLlmSettingsStore } from '@/hooks/use-llm-settings'
 
 type UseFollowUpSuggestionsOptions = {
   /** Minimum response length to trigger suggestions */
   minResponseLength?: number
   /** Timeout for LLM request in ms */
   timeoutMs?: number
-  /** Whether to skip LLM and use heuristics only */
+  /** Whether to skip LLM and use heuristics only (overrides settings) */
   heuristicsOnly?: boolean
 }
 
@@ -22,22 +20,74 @@ type UseFollowUpSuggestionsResult = {
 }
 
 /**
+ * Fetch LLM-generated follow-up suggestions from OpenAI API
+ */
+async function fetchOpenAIFollowUps(
+  conversationContext: string,
+  apiKey: string,
+  signal?: AbortSignal,
+): Promise<string[]> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  }
+  if (apiKey) {
+    headers['X-OpenAI-API-Key'] = apiKey
+  }
+
+  const res = await fetch('/api/llm-features', {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      action: 'followups',
+      conversationContext,
+    }),
+    signal,
+  })
+
+  if (!res.ok) {
+    throw new Error(`API error: ${res.status}`)
+  }
+
+  const data = (await res.json()) as {
+    ok: boolean
+    suggestions?: string[]
+    source?: string
+    error?: string
+  }
+
+  if (data.ok && Array.isArray(data.suggestions) && data.suggestions.length > 0) {
+    return data.suggestions
+  }
+
+  return []
+}
+
+/**
  * Hook for fetching smart follow-up suggestions.
  *
- * Uses LLM-powered generation via the gateway, with graceful fallback
- * to client-side heuristics if the LLM request fails or times out.
+ * Uses LLM-powered generation via OpenAI API when enabled in settings,
+ * with graceful fallback to client-side heuristics if the LLM request
+ * fails or times out.
  */
 export function useFollowUpSuggestions(
   responseText: string,
   contextSummary?: string,
   options?: UseFollowUpSuggestionsOptions,
 ): UseFollowUpSuggestionsResult {
+  // Get LLM settings
+  const llmSettings = useLlmSettingsStore((state) => state.settings)
+  const useLlmFollowUps = llmSettings.useLlmFollowUps
+  const apiKey = llmSettings.openaiApiKey
+
   const {
     minResponseLength = 50,
     timeoutMs = 8000,
-    // LLM follow-ups disabled - gateway doesn't support chat.complete yet
-    heuristicsOnly = true,
+    // Use heuristics only if explicitly set OR if LLM follow-ups are disabled
+    heuristicsOnly: forceHeuristicsOnly,
   } = options ?? {}
+
+  // Determine if we should use heuristics only
+  const heuristicsOnly = forceHeuristicsOnly ?? !useLlmFollowUps
 
   const [suggestions, setSuggestions] = useState<string[]>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -91,10 +141,13 @@ export function useFollowUpSuggestions(
     setSuggestions(heuristicSuggestions)
     setSource('heuristic')
 
-    fetchFollowUpSuggestions(responseText, contextSummary, {
-      signal: controller.signal,
-      timeoutMs,
-    })
+    // Build context for the API call
+    const conversationContext = contextSummary
+      ? `Context: ${contextSummary}\n\nAssistant's response:\n${responseText.slice(0, 2000)}`
+      : `Assistant's response:\n${responseText.slice(0, 2000)}`
+
+    // Use OpenAI API via our endpoint
+    fetchOpenAIFollowUps(conversationContext, apiKey, controller.signal)
       .then((llmSuggestions) => {
         if (controller.signal.aborted) return
 
@@ -116,7 +169,7 @@ export function useFollowUpSuggestions(
     return () => {
       controller.abort()
     }
-  }, [responseText, contextSummary, minResponseLength, timeoutMs, heuristicsOnly])
+  }, [responseText, contextSummary, minResponseLength, timeoutMs, heuristicsOnly, apiKey])
 
   return { suggestions, isLoading, error, source }
 }

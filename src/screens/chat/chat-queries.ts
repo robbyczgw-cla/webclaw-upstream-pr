@@ -224,3 +224,43 @@ export function removeSessionFromCache(
     })
   }
 }
+
+/**
+ * Update session label/title in cache and persist to server
+ */
+export async function updateSessionLabel(
+  queryClient: QueryClient,
+  sessionKey: string,
+  friendlyId: string,
+  label: string,
+): Promise<void> {
+  // Optimistically update the cache
+  queryClient.setQueryData(
+    chatQueryKeys.sessions,
+    function update(data: unknown) {
+      if (!Array.isArray(data)) return data
+      return (data as Array<SessionMeta>).map((session) => {
+        if (session.key === sessionKey || session.friendlyId === friendlyId) {
+          return { ...session, label }
+        }
+        return session
+      })
+    },
+  )
+
+  // Persist to server
+  try {
+    const res = await fetch('/api/sessions', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionKey, friendlyId, label }),
+    })
+
+    if (!res.ok) {
+      const errorText = await readError(res)
+      console.error('[updateSessionLabel] Failed to persist:', errorText)
+    }
+  } catch (err) {
+    console.error('[updateSessionLabel] Network error:', err)
+  }
+}
