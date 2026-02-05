@@ -547,6 +547,24 @@ export function ChatScreen({
     })
   }, [queryClient])
 
+  // Handle follow-up suggestion clicks - sends the suggestion as a new message
+  const handleFollowUpClick = useCallback(
+    (suggestion: string) => {
+      if (isNewChat || !suggestion.trim()) return
+      const sessionKeyForSend =
+        forcedSessionKey || resolvedSessionKey || activeSessionKey
+      if (!sessionKeyForSend) return
+      sendMessage(sessionKeyForSend, activeFriendlyId, suggestion.trim())
+    },
+    [
+      activeFriendlyId,
+      activeSessionKey,
+      forcedSessionKey,
+      isNewChat,
+      resolvedSessionKey,
+    ],
+  )
+
   const historyLoading =
     (historyQuery.isLoading && !historyQuery.data) || isRedirecting
   const showGatewayDown = Boolean(gatewayStatusError)
@@ -624,6 +642,7 @@ export function ChatScreen({
                 pinGroupMinHeight={pinGroupMinHeight}
                 headerHeight={headerHeight}
                 contentStyle={stableContentStyle}
+                onFollowUpClick={handleFollowUpClick}
               />
               <ChatComposer
                 onSubmit={send}

@@ -1,6 +1,7 @@
 import { memo, useLayoutEffect, useMemo, useRef } from 'react'
-import { getToolCallsFromMessage } from '../utils'
+import { getToolCallsFromMessage, textFromMessage } from '../utils'
 import { MessageItem } from './message-item'
+import { FollowUpSuggestions } from './follow-up-suggestions'
 import type { GatewayMessage } from '../types'
 import {
   ChatContainerContent,
@@ -22,6 +23,8 @@ type ChatMessageListProps = {
   pinGroupMinHeight: number
   headerHeight: number
   contentStyle?: React.CSSProperties
+  /** Callback when a follow-up suggestion is clicked */
+  onFollowUpClick?: (suggestion: string) => void
 }
 
 function ChatMessageListComponent({
@@ -37,6 +40,7 @@ function ChatMessageListComponent({
   pinGroupMinHeight,
   headerHeight,
   contentStyle,
+  onFollowUpClick,
 }: ChatMessageListProps) {
   const anchorRef = useRef<HTMLDivElement | null>(null)
   const lastUserRef = useRef<HTMLDivElement | null>(null)
@@ -79,6 +83,26 @@ function ChatMessageListComponent({
   // Pin the last user+assistant group without adding bottom padding.
   const groupStartIndex = typeof lastUserIndex === 'number' ? lastUserIndex : -1
   const hasGroup = pinToTop && groupStartIndex >= 0
+
+  // Get the last assistant message text for follow-up suggestions
+  const lastAssistantMessage =
+    typeof lastAssistantIndex === 'number'
+      ? displayMessages[lastAssistantIndex]
+      : undefined
+  const lastAssistantText = lastAssistantMessage
+    ? textFromMessage(lastAssistantMessage)
+    : ''
+  // Show follow-ups only when:
+  // - Not waiting for response
+  // - There's a last assistant message
+  // - The last message in conversation is from assistant (not user waiting for response)
+  const showFollowUps =
+    !waitingForResponse &&
+    lastAssistantText.length > 0 &&
+    onFollowUpClick !== undefined &&
+    (typeof lastUserIndex !== 'number' ||
+      typeof lastAssistantIndex !== 'number' ||
+      lastAssistantIndex > lastUserIndex)
 
   useLayoutEffect(() => {
     if (loading) return
@@ -184,29 +208,45 @@ function ChatMessageListComponent({
                   <TypingIndicator />
                 </div>
               ) : null}
+              {showFollowUps && onFollowUpClick ? (
+                <FollowUpSuggestions
+                  responseText={lastAssistantText}
+                  onSuggestionClick={onFollowUpClick}
+                  disabled={waitingForResponse}
+                />
+              ) : null}
             </div>
           </>
         ) : (
-          displayMessages.map((chatMessage, index) => {
-            const messageKey =
-              chatMessage.__optimisticId || (chatMessage as any).id || index
-            const forceActionsVisible =
-              typeof lastAssistantIndex === 'number' &&
-              index === lastAssistantIndex
-            const hasToolCalls =
-              chatMessage.role === 'assistant' &&
-              getToolCallsFromMessage(chatMessage).length > 0
-            return (
-              <MessageItem
-                key={messageKey}
-                message={chatMessage}
-                toolResultsByCallId={
-                  hasToolCalls ? toolResultsByCallId : undefined
-                }
-                forceActionsVisible={forceActionsVisible}
+          <>
+            {displayMessages.map((chatMessage, index) => {
+              const messageKey =
+                chatMessage.__optimisticId || (chatMessage as any).id || index
+              const forceActionsVisible =
+                typeof lastAssistantIndex === 'number' &&
+                index === lastAssistantIndex
+              const hasToolCalls =
+                chatMessage.role === 'assistant' &&
+                getToolCallsFromMessage(chatMessage).length > 0
+              return (
+                <MessageItem
+                  key={messageKey}
+                  message={chatMessage}
+                  toolResultsByCallId={
+                    hasToolCalls ? toolResultsByCallId : undefined
+                  }
+                  forceActionsVisible={forceActionsVisible}
+                />
+              )
+            })}
+            {showFollowUps && onFollowUpClick ? (
+              <FollowUpSuggestions
+                responseText={lastAssistantText}
+                onSuggestionClick={onFollowUpClick}
+                disabled={waitingForResponse}
               />
-            )
-          })
+            ) : null}
+          </>
         )}
         {notice && noticePosition === 'end' ? notice : null}
         <ChatContainerScrollAnchor
@@ -233,7 +273,8 @@ function areChatMessageListEqual(
     prev.pinToTop === next.pinToTop &&
     prev.pinGroupMinHeight === next.pinGroupMinHeight &&
     prev.headerHeight === next.headerHeight &&
-    prev.contentStyle === next.contentStyle
+    prev.contentStyle === next.contentStyle &&
+    prev.onFollowUpClick === next.onFollowUpClick
   )
 }
 
