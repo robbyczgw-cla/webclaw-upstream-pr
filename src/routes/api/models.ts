@@ -47,17 +47,28 @@ type ModelInfo = {
 
 function parseModelName(modelId: string): string {
   // Extract a friendly name from model ID
-  // e.g., "anthropic/claude-sonnet-4" -> "Claude Sonnet 4"
-  //       "openai/gpt-4" -> "GPT-4"
-  const parts = modelId.split('/')
-  const model = parts.length > 1 ? parts[1] : parts[0]
+  // e.g., "anthropic/claude-sonnet-4-5" -> "Claude Sonnet 4.5"
+  //       "synthetic/hf:moonshotai/Kimi-K2.5" -> "Kimi K2.5"
+  //       "openrouter/x-ai/grok-4.1-fast" -> "Grok 4.1 Fast"
+  
+  // Handle synthetic providers with hf: prefix
+  if (modelId.includes('hf:')) {
+    const match = modelId.match(/hf:[^/]+\/(.+)$/)
+    if (match) {
+      return match[1].replace(/-/g, ' ')
+    }
+  }
+  
+  // Handle multi-segment paths like openrouter/x-ai/grok-4.1-fast
+  const segments = modelId.split('/')
+  const model = segments[segments.length - 1]
   
   // Capitalize and clean up
   return model
     .split('-')
     .map(word => {
       // Keep known acronyms uppercase
-      if (['gpt', 'ai', 'api'].includes(word.toLowerCase())) {
+      if (['gpt', 'ai', 'api', 'glm'].includes(word.toLowerCase())) {
         return word.toUpperCase()
       }
       // Capitalize first letter
@@ -80,11 +91,12 @@ export const Route = createFileRoute('/api/models')({
           if (res.config?.agents?.defaults?.models) {
             const agentModels = res.config.agents.defaults.models
             for (const [modelId, modelConfig] of Object.entries(agentModels)) {
+              const parsedName = parseModelName(modelId)
               models.push({
                 id: modelId,
                 name: modelConfig.alias 
-                  ? `${modelConfig.alias.charAt(0).toUpperCase() + modelConfig.alias.slice(1)} (${parseModelName(modelId)})`
-                  : parseModelName(modelId),
+                  ? `${parsedName} (${modelConfig.alias})`
+                  : parsedName,
                 provider: modelId.split('/')[0],
               })
             }
