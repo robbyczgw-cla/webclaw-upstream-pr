@@ -111,6 +111,17 @@ Watch AI responses appear token by token:
 - Tool call indicators during processing
 - Fast-polling fallback for resilience
 
+#### 📂 File Explorer
+Browse and edit files directly in the browser:
+- Sidebar navigation with breadcrumb trail
+- Upload, download, rename, delete files and folders
+- Built-in text editor for 30+ file types (yaml, json, md, py, js, etc.)
+- Right-click context menu
+- Path jailing with symlink escape protection (`FILES_ROOT` env var)
+- Ctrl+S to save, Esc to close editor
+
+*Based on [balin-ar's PR](https://github.com/ibelick/webclaw/pull/2) — thank you! 🙏*
+
 #### 💬 Slash Commands
 Built-in `/help` shows available commands
 
@@ -157,6 +168,13 @@ CLAWDBOT_GATEWAY_TOKEN=YOUR_TOKEN_HERE
 
 Model fallback chain: `gpt-4.1-nano → gpt-4o-mini → gpt-3.5-turbo`
 
+### File Explorer (Optional)
+Set a root directory for the file explorer:
+```bash
+FILES_ROOT=/path/to/your/workspace
+```
+Access via the sidebar link or navigate to `/files`.
+
 ### Voice Playback (Optional)
 TTS works out of the box with Edge TTS (free, no setup). For higher quality:
 - **ElevenLabs:** Configure `messages.tts.elevenlabs.apiKey` in your OpenClaw config
@@ -182,6 +200,7 @@ PRs submitted to [ibelick/webclaw](https://github.com/ibelick/webclaw):
 - [x] 🎨 Model Selector
 - [x] 📱 PWA Support
 - [x] ⚡ Real-Time Streaming
+- [x] 📂 File Explorer
 - [ ] 🔔 Push Notifications (PWA)
 - [ ] 🎤 Voice Input (Whisper transcription)
 - [ ] 📎 File Uploads (PDFs, docs, code)
@@ -190,6 +209,7 @@ PRs submitted to [ibelick/webclaw](https://github.com/ibelick/webclaw):
 ## 🙏 Credits
 
 - **[WebClaw](https://github.com/ibelick/webclaw)** by [Julien Thibeaut](https://github.com/ibelick) — Original project
+- **[balin-ar](https://github.com/balin-ar)** — File Explorer with built-in text editor ([PR #2](https://github.com/ibelick/webclaw/pull/2))
 - **[OpenClaw](https://github.com/openclaw/openclaw)** — The gateway that powers it all
 
 ## 📄 License
