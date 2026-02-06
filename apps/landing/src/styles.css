@@ -1,22 +1,15 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap");
 @import "tailwindcss";
 
-@theme {
-  --color-primary-50: oklch(0.992 0.002 80);
-  --color-primary-100: oklch(0.9821 0 89.88);
-  --color-primary-200: oklch(0.9461 0 89.88);
-  --color-primary-300: oklch(0.95 0.004 80);
-  --color-primary-400: oklch(0.875 0.005 80);
-  --color-primary-500: oklch(0.785 0.006 80);
-  --color-primary-600: oklch(0.67 0.007 80);
-  --color-primary-700: oklch(0.56 0.006 80);
-  --color-primary-800: oklch(0.45 0.005 80);
-  --color-primary-900: oklch(0.35 0.004 80);
-  --color-primary-950: oklch(0.25 0.003 80);
+body {
+  margin: 0;
 }
 
+html,
 body {
-  @apply min-h-screen bg-primary-50 text-primary-900;
-  margin: 0;
-  display: grid;
-  place-items: center;
+  @apply m-0 font-sans;
+  letter-spacing: -0.15px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overscroll-behavior: none;
 }

@@ -4,13 +4,21 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite dev --port 3001",
+    "dev": "vite dev --port 3003",
     "build": "vite build",
     "preview": "vite preview"
   },
+  "dependencies": {
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
   "devDependencies": {
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^5.0.4",
     "@tailwindcss/vite": "^4.1.18",
     "tailwindcss": "^4.1.18",
+    "typescript": "^5.7.2",
     "vite": "^7.1.7"
   }
 }
