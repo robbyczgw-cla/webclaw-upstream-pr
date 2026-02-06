@@ -15,7 +15,32 @@ import {
 } from '@/components/ui/scroll-area'
 import { SessionItem } from './session-item'
 import type { SessionMeta } from '../../types'
-import { memo } from 'react'
+import { memo, useCallback, useMemo, useState } from 'react'
+
+const PINNED_SESSIONS_KEY = 'opencami-pinned-sessions'
+
+function readPinnedSessionKeys(): Array<string> {
+  if (typeof window === 'undefined') return []
+  try {
+    const stored = localStorage.getItem(PINNED_SESSIONS_KEY)
+    if (!stored) return []
+    const parsed = JSON.parse(stored)
+    if (!Array.isArray(parsed)) return []
+    return parsed.filter((value): value is string => typeof value === 'string')
+  } catch {
+    return []
+  }
+}
+
+function writePinnedSessionKeys(keys: Array<string>) {
+  if (typeof window === 'undefined') return
+  try {
+    const uniqueKeys = Array.from(new Set(keys))
+    localStorage.setItem(PINNED_SESSIONS_KEY, JSON.stringify(uniqueKeys))
+  } catch {
+    // Ignore storage errors.
+  }
+}
 
 type SidebarSessionsProps = {
   sessions: Array<SessionMeta>
@@ -36,6 +61,32 @@ export const SidebarSessions = memo(function SidebarSessions({
   onDelete,
   onExport,
 }: SidebarSessionsProps) {
+  const [pinnedSessionKeys, setPinnedSessionKeys] = useState<Array<string>>(() =>
+    readPinnedSessionKeys(),
+  )
+  const pinnedSessionKeySet = useMemo(
+    () => new Set(pinnedSessionKeys),
+    [pinnedSessionKeys],
+  )
+  const pinnedSessions = sessions.filter((session) =>
+    pinnedSessionKeySet.has(session.key),
+  )
+  const unpinnedSessions = sessions.filter(
+    (session) => !pinnedSessionKeySet.has(session.key),
+  )
+  const showDivider = pinnedSessions.length > 0 && unpinnedSessions.length > 0
+
+  const handleTogglePin = useCallback((session: SessionMeta) => {
+    setPinnedSessionKeys((prevKeys) => {
+      const isPinned = prevKeys.includes(session.key)
+      const nextKeys = isPinned
+        ? prevKeys.filter((key) => key !== session.key)
+        : [...prevKeys, session.key]
+      writePinnedSessionKeys(nextKeys)
+      return nextKeys
+    })
+  }, [])
+
   return (
     <Collapsible
       className="flex h-full flex-col flex-1 min-h-0 w-full"
@@ -57,12 +108,30 @@ export const SidebarSessions = memo(function SidebarSessions({
         <ScrollAreaRoot className="flex-1 min-h-0">
           <ScrollAreaViewport className="min-h-0">
             <div className="flex flex-col gap-px pl-2 pr-2">
-              {sessions.map((session) => (
+              {pinnedSessions.map((session) => (
                 <SessionItem
                   key={session.key}
                   session={session}
                   active={session.friendlyId === activeFriendlyId}
+                  isPinned
                   onSelect={onSelect}
+                  onTogglePin={handleTogglePin}
+                  onRename={onRename}
+                  onDelete={onDelete}
+                  onExport={onExport}
+                />
+              ))}
+              {showDivider ? (
+                <div className="my-1 border-t border-primary-200/80" />
+              ) : null}
+              {unpinnedSessions.map((session) => (
+                <SessionItem
+                  key={session.key}
+                  session={session}
+                  active={session.friendlyId === activeFriendlyId}
+                  isPinned={false}
+                  onSelect={onSelect}
+                  onTogglePin={handleTogglePin}
                   onRename={onRename}
                   onDelete={onDelete}
                   onExport={onExport}

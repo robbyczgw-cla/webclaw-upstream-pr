@@ -21,7 +21,9 @@ import type { SessionMeta } from '../../types'
 type SessionItemProps = {
   session: SessionMeta
   active: boolean
+  isPinned: boolean
   onSelect?: () => void
+  onTogglePin: (session: SessionMeta) => void
   onRename: (session: SessionMeta) => void
   onDelete: (session: SessionMeta) => void
   onExport: (session: SessionMeta) => void
@@ -30,7 +32,9 @@ type SessionItemProps = {
 function SessionItemComponent({
   session,
   active,
+  isPinned,
   onSelect,
+  onTogglePin,
   onRename,
   onDelete,
   onExport,
@@ -53,7 +57,14 @@ function SessionItemComponent({
       )}
     >
       <div className="flex-1 min-w-0">
-        <div className="text-sm font-[450] line-clamp-1">{label}</div>
+        <div className="text-sm font-[450] line-clamp-1">
+          {isPinned ? (
+            <span className="mr-1 text-xs text-primary-700" aria-hidden="true">
+              📌
+            </span>
+          ) : null}
+          {label}
+        </div>
       </div>
       <MenuRoot>
         <MenuTrigger
@@ -75,6 +86,19 @@ function SessionItemComponent({
           />
         </MenuTrigger>
         <MenuContent side="bottom" align="end">
+          <MenuItem
+            onClick={(event) => {
+              event.preventDefault()
+              event.stopPropagation()
+              onTogglePin(session)
+            }}
+            className="gap-2"
+          >
+            <span className="text-xs" aria-hidden="true">
+              📌
+            </span>{' '}
+            {isPinned ? 'Unpin Session' : 'Pin Session'}
+          </MenuItem>
           <MenuItem
             onClick={(event) => {
               event.preventDefault()
@@ -116,7 +140,9 @@ function SessionItemComponent({
 
 function areSessionItemsEqual(prev: SessionItemProps, next: SessionItemProps) {
   if (prev.active !== next.active) return false
+  if (prev.isPinned !== next.isPinned) return false
   if (prev.onSelect !== next.onSelect) return false
+  if (prev.onTogglePin !== next.onTogglePin) return false
   if (prev.onRename !== next.onRename) return false
   if (prev.onDelete !== next.onDelete) return false
   if (prev.onExport !== next.onExport) return false
