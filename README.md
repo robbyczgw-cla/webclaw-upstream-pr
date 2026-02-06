@@ -4,7 +4,8 @@
 
 Forked from [WebClaw](https://github.com/ibelick/webclaw).
 
-![OpenCami](https://img.shields.io/badge/OpenCami-🦎-green)
+[![OpenCami](https://img.shields.io/badge/OpenCami-🦎-green)](https://opencami.xyz)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 ## ✨ Features
 
@@ -16,52 +17,46 @@ Forked from [WebClaw](https://github.com/ibelick/webclaw).
 - 📱 Mobile-responsive design
 
 ### OpenCami Additions
-- 🖼️ **Image Attachments** - Upload and send images with auto-compression (fits 512KB WebSocket limit)
-- 🔍 **Conversation Search** - `⌘F` for current chat, `⌘⇧F` for global search
-- ⌨️ **Keyboard Shortcuts** - Power-user navigation
-- 📥 **Conversation Export** - Export as Markdown, JSON, or plain text
-- 🎨 **Model Selector** - Switch models on the fly (UI ready)
-- 🦎 **Chameleon Theme** - Nature-inspired color scheme
-- 💬 **Slash Command Help** - `/help` shows available commands
 
-### 🤖 LLM-Enhanced Features (NEW!)
-- 🏷️ **Smart Session Titles** - AI-generated titles instead of "Feb 5 - hello..."
-- 💡 **Smart Follow-ups** - Context-aware follow-up suggestions
-- ⚙️ **Optional** - Heuristic fallback when disabled
-- 🔑 **Uses OpenAI API** - gpt-4.1-nano (with fallback chain)
+#### 📱 PWA — Install as App
+Full Progressive Web App support for Android & iOS:
+- **Install to Home Screen** — native app feel, no browser chrome
+- **Offline Support** — cached shell loads even without internet
+- **Auto-Update** — service worker updates seamlessly in background
+- **Smart Caching** — cache-first for assets, network-first for API calls
+- Works on Android (Chrome) and iOS (Safari)
 
-## 🚀 Quick Start
+#### 🖼️ Image Attachments
+Upload and send images directly in chat:
+- Drag & drop, clipboard paste, or file picker
+- Auto-compression (fits 512KB WebSocket limit)
+- Supports PNG, JPG, GIF, WebP (max 10MB input)
+- Preview before sending
 
-```bash
-# Clone
-git clone https://github.com/robbyczgw-cla/opencami.git
-cd opencami
+#### 🔍 Conversation Search
+Find anything across all your conversations:
+- `⌘F` — Search current conversation
+- `⌘⇧F` — Global search across all sessions
+- Instant results with highlighted matches
 
-# Install
-npm install
+#### 🏷️ Smart Session Titles
+AI-generated titles that actually describe your conversations:
+- Powered by LLM (gpt-4.1-nano with fallback chain)
+- Replaces generic "Feb 5 - hello..." titles
+- Heuristic fallback when LLM is disabled
 
-# Run (connects to OpenClaw Gateway on localhost:18789)
-npm run dev
-```
+#### 💡 Smart Follow-ups
+Context-aware suggestions for what to ask next:
+- Instant heuristic suggestions appear immediately
+- LLM analyzes context in background for smarter suggestions
+- One click to send any suggestion
+- Seamless transition from heuristic → AI suggestions
 
-Open http://localhost:3000
+#### 🦎 Chameleon Theme
+Nature-inspired color scheme — because why not 🌿
 
-## ⚙️ Configuration
-
-### LLM Features
-1. Go to Settings (⚙️)
-2. Enable "Use LLM for session titles" and/or "Use LLM for follow-ups"
-3. API key options:
-   - Set `OPENAI_API_KEY` environment variable (recommended)
-   - Or enter manually in settings
-
-### Model Fallback Chain
-```
-gpt-4.1-nano → gpt-4o-mini → gpt-3.5-turbo
-```
-If one model is unavailable, automatically tries the next.
-
-## ⌨️ Keyboard Shortcuts
+#### ⌨️ Keyboard Shortcuts
+Power-user navigation:
 
 | Shortcut | Action |
 |----------|--------|
@@ -73,27 +68,85 @@ If one model is unavailable, automatically tries the next.
 | `Esc` | Close dialogs |
 | `?` | Show shortcuts help |
 
-## 🖼️ Image Attachments
+#### 📥 Conversation Export
+Export any conversation in the format you need:
+- 📝 Markdown (.md)
+- 📋 JSON (.json)
+- 📄 Plain Text (.txt)
 
-- **Supported formats:** PNG, JPG, GIF, WebP
-- **Max upload:** 10MB (auto-compressed to ~300KB)
-- **Compression:** Client-side, fits 512KB WebSocket limit
+#### 🎨 Model Selector
+Switch models on the fly (UI ready, Gateway integration pending)
+
+#### 💬 Slash Commands
+Built-in `/help` shows available commands
+
+## 🚀 Quick Start
+
+```bash
+# Clone
+git clone https://github.com/robbyczgw-cla/opencami.git
+cd opencami
+
+# Install
+npm install
+
+# Configure
+cp .env.example .env.local
+# Edit .env.local with your Gateway URL and token
+
+# Run
+npm run dev
+```
+
+Open http://localhost:3001
+
+### 📱 Install as PWA
+1. Open OpenCami in your browser
+2. **Android:** Tap ⋮ menu → "Install app" or "Add to Home Screen"
+3. **iOS:** Tap Share → "Add to Home Screen"
+
+## ⚙️ Configuration
+
+### Gateway Connection
+Create `.env.local`:
+```bash
+CLAWDBOT_GATEWAY_URL=ws://127.0.0.1:18789
+CLAWDBOT_GATEWAY_TOKEN=YOUR_TOKEN_HERE
+```
+
+### LLM Features (Optional)
+1. Go to Settings (⚙️)
+2. Enable "Smart Titles" and/or "Smart Follow-ups"
+3. API key options:
+   - Set `OPENAI_API_KEY` environment variable (recommended)
+   - Or enter manually in Settings
+
+Model fallback chain: `gpt-4.1-nano → gpt-4o-mini → gpt-3.5-turbo`
 
 ## 🔄 Upstream Contributions
 
 PRs submitted to [ibelick/webclaw](https://github.com/ibelick/webclaw):
-- ✅ [PR #1](https://github.com/ibelick/webclaw/pull/1) - Locale fix (MERGED)
-- ⏳ [PR #4](https://github.com/ibelick/webclaw/pull/4) - Image attachments (pending)
+- ✅ [PR #1](https://github.com/ibelick/webclaw/pull/1) — Locale fix (MERGED)
+- ⏳ [PR #4](https://github.com/ibelick/webclaw/pull/4) — Image attachments (pending)
+
+## 🗺️ Roadmap
+
+- [ ] 🔔 Push Notifications (PWA)
+- [ ] 🎤 Voice Messages (Whisper transcription)
+- [ ] 📎 File Uploads (PDFs, docs, code)
+- [ ] 🤖 Model Switcher (Gateway integration)
+- [ ] 🔊 TTS Playback (ElevenLabs)
+- [ ] 📊 Usage Dashboard
 
 ## 🙏 Credits
 
-- **WebClaw** by [Julien Thibeaut](https://github.com/ibelick) - Original project
-- **OpenClaw** - The gateway that powers it all
+- **[WebClaw](https://github.com/ibelick/webclaw)** by [Julien Thibeaut](https://github.com/ibelick) — Original project
+- **[OpenClaw](https://github.com/openclaw/openclaw)** — The gateway that powers it all
 
 ## 📄 License
 
-MIT - See [LICENSE](LICENSE)
+MIT — See [LICENSE](LICENSE)
 
 ---
 
-*Built with 💚 by the OpenCami community*
+🌐 **[opencami.xyz](https://opencami.xyz)** · Built with 💚 by the OpenCami community
