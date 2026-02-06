@@ -1,11 +1,10 @@
-# WebClaw Monorepo
+# WebClaw
+
+![Cover](./apps/webclaw/public/cover.webp)
 
 Fast web client for OpenClaw.
 
-## Apps
-
-- `apps/webclaw`: React + TanStack Router app
-- `apps/landing`: Minimal landing page
+Currently in beta.
 
 ## Setup
 
@@ -18,15 +17,3 @@ Default URL is `ws://127.0.0.1:18789`. Docs: https://docs.openclaw.ai/gateway
 pnpm install
 pnpm dev
 ```
-
-## Landing
-
-```bash
-pnpm landing:dev
-```
-
-```bash
-pnpm landing:build
-```
-
-The landing deploy bundle is in `apps/landing/dist`.
