@@ -19,7 +19,18 @@ type PersonasResponse = {
   available: boolean
 }
 
+const PERSONAS_ENABLED_KEY = 'opencami-personas-enabled'
 const ACTIVE_PERSONA_KEY = 'opencami-active-persona'
+
+function isPersonasEnabled(): boolean {
+  if (typeof window === 'undefined') return true
+  try {
+    const stored = localStorage.getItem(PERSONAS_ENABLED_KEY)
+    return stored === null ? true : stored === 'true'
+  } catch {
+    return true
+  }
+}
 
 function getStoredPersona(): Persona | null {
   if (typeof window === 'undefined') return null
@@ -51,7 +62,6 @@ const CATEGORY_LABELS: Record<string, string> = {
   learning: 'Learning',
   lifestyle: 'Lifestyle',
   professional: 'Professional',
-  philosophy: 'Philosophy',
 }
 
 type PersonaPickerProps = {
@@ -64,6 +74,18 @@ export function PersonaPicker({ className, onSelect }: PersonaPickerProps) {
   const [activePersona, setActivePersona] = useState<Persona | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [available, setAvailable] = useState(false)
+  const [enabled, setEnabled] = useState(isPersonasEnabled)
+
+  // Listen for settings changes (from Settings dialog or other tabs)
+  useEffect(() => {
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === PERSONAS_ENABLED_KEY) {
+        setEnabled(e.newValue === null ? true : e.newValue === 'true')
+      }
+    }
+    window.addEventListener('storage', handleStorage)
+    return () => window.removeEventListener('storage', handleStorage)
+  }, [])
 
   useEffect(() => {
     let mounted = true
@@ -120,7 +142,7 @@ export function PersonaPicker({ className, onSelect }: PersonaPickerProps) {
     onSelect('/persona exit')
   }, [onSelect])
 
-  if (isLoading || !available) {
+  if (isLoading || !available || !enabled) {
     return null
   }
 

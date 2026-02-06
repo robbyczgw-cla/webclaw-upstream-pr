@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
   Cancel01Icon,
@@ -86,6 +86,50 @@ export function SettingsDialog({
   const [apiKeyInput, setApiKeyInput] = useState(llmSettings.openaiApiKey)
   const [testingKey, setTestingKey] = useState(false)
   const [testResult, setTestResult] = useState<{ valid: boolean; error?: string } | null>(null)
+
+  // Personas state
+  const [personasAvailable, setPersonasAvailable] = useState(false)
+  const [personasEnabled, setPersonasEnabled] = useState(() => {
+    if (typeof window === 'undefined') return true
+    try {
+      const stored = localStorage.getItem('opencami-personas-enabled')
+      return stored === null ? true : stored === 'true'
+    } catch {
+      return true
+    }
+  })
+
+  useEffect(() => {
+    let mounted = true
+    async function checkPersonas() {
+      try {
+        const res = await fetch('/api/personas')
+        if (!res.ok) return
+        const data = (await res.json()) as { ok: boolean; available: boolean }
+        if (mounted && data.ok) {
+          setPersonasAvailable(data.available)
+        }
+      } catch {
+        // ignore
+      }
+    }
+    checkPersonas()
+    return () => { mounted = false }
+  }, [])
+
+  const handlePersonasToggle = (checked: boolean) => {
+    setPersonasEnabled(checked)
+    try {
+      localStorage.setItem('opencami-personas-enabled', String(checked))
+    } catch {
+      // ignore storage errors
+    }
+    // Dispatch storage event so PersonaPicker can react in real-time
+    window.dispatchEvent(new StorageEvent('storage', {
+      key: 'opencami-personas-enabled',
+      newValue: String(checked),
+    }))
+  }
 
   const handleTestApiKey = async () => {
     if (!apiKeyInput.trim()) return
@@ -214,6 +258,39 @@ export function SettingsDialog({
                 }
               />
             </SettingsRow>
+          </SettingsSection>
+
+          <SettingsSection title="Personas">
+            {personasAvailable ? (
+              <SettingsRow
+                label="Persona Picker"
+                description="Show persona picker in chat (20 personalities)"
+              >
+                <Switch
+                  checked={personasEnabled}
+                  onCheckedChange={handlePersonasToggle}
+                />
+              </SettingsRow>
+            ) : (
+              <SettingsRow
+                label="Persona Picker"
+                description="Install the Personas skill to unlock 20 AI personalities"
+              >
+                <Switch checked={false} disabled />
+              </SettingsRow>
+            )}
+            {!personasAvailable && (
+              <div className="pt-1">
+                <a
+                  href="https://www.clawhub.ai/robbyczgw-cla/personas"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-primary-600 hover:text-primary-900 hover:underline"
+                >
+                  Get it on ClawHub →
+                </a>
+              </div>
+            )}
           </SettingsSection>
 
           <SettingsSection title="LLM Features">
