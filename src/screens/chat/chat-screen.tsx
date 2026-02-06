@@ -89,6 +89,7 @@ export function ChatScreen({
   const [showShortcutsHelp, setShowShortcutsHelp] = useState(false)
   const [showSearchDialog, setShowSearchDialog] = useState(false)
   const [searchMode, setSearchMode] = useState<'global' | 'current'>('global')
+  const [isStreaming, setIsStreaming] = useState(false)
   const inputRef = useRef<HTMLTextAreaElement | null>(null)
   const streamTimer = useRef<number | null>(null)
   const streamIdleTimer = useRef<number | null>(null)
@@ -172,18 +173,27 @@ export function ChatScreen({
     streamStop()
     setPendingGeneration(false)
     setWaitingForResponse(false)
+    setIsStreaming(false)
   }, [streamStop])
 
   // Smart title generation
   const llmTitlesEnabled = useLlmTitlesEnabled()
   const { generateTitle } = useSmartTitle()
   const titleGeneratedRef = useRef<Set<string>>(new Set())
+  // Fast-polling interval (ms) used while the assistant is actively generating.
+  // 150ms gives a near-real-time feel as Gateway sends block-streamed chunks.
+  const FAST_POLL_MS = 150
+  // Normal polling interval once the response is mostly stable but not yet
+  // confirmed finished (idle-timeout window).
+  const NORMAL_POLL_MS = 600
+
   const streamStart = useCallback(() => {
     if (!activeFriendlyId || isNewChat) return
     if (streamTimer.current) window.clearInterval(streamTimer.current)
+    setIsStreaming(true)
     streamTimer.current = window.setInterval(() => {
       refreshHistoryRef.current()
-    }, 350)
+    }, FAST_POLL_MS)
   }, [activeFriendlyId, isNewChat])
   const stableContentStyle = useMemo<React.CSSProperties>(() => ({}), [])
   refreshHistoryRef.current = function refreshHistory() {
@@ -274,18 +284,46 @@ export function ChatScreen({
 
   const hideUi = shouldRedirectToNew || isRedirecting
 
+  // Downshift polling once content stops changing, then finish after a longer
+  // idle period.  This avoids killing the stream prematurely (the previous 4 s
+  // timeout sometimes fired before the Gateway had finished) while still being
+  // responsive during generation.
+  const pollingPhaseRef = useRef<'fast' | 'slow'>('fast')
+
   useEffect(() => {
     const latestMessage = historyMessages[historyMessages.length - 1]
     if (!latestMessage || latestMessage.role !== 'assistant') return
     const signature = `${historyMessages.length}:${textFromMessage(latestMessage).slice(-64)}`
     if (signature !== lastAssistantSignature.current) {
       lastAssistantSignature.current = signature
+
+      // Content is still changing → ensure we're on the fast cadence.
+      if (pollingPhaseRef.current !== 'fast' && streamTimer.current) {
+        window.clearInterval(streamTimer.current)
+        streamTimer.current = window.setInterval(() => {
+          refreshHistoryRef.current()
+        }, FAST_POLL_MS)
+        pollingPhaseRef.current = 'fast'
+      }
+
       if (streamIdleTimer.current) {
         window.clearTimeout(streamIdleTimer.current)
       }
+      // After 1.5 s of no new content, downshift to slow polling.
       streamIdleTimer.current = window.setTimeout(() => {
-        streamFinish()
-      }, 4000)
+        if (streamTimer.current) {
+          window.clearInterval(streamTimer.current)
+          streamTimer.current = window.setInterval(() => {
+            refreshHistoryRef.current()
+          }, NORMAL_POLL_MS)
+          pollingPhaseRef.current = 'slow'
+        }
+        // After another 3 s of silence on slow cadence, finish entirely.
+        streamIdleTimer.current = window.setTimeout(() => {
+          streamFinish()
+          pollingPhaseRef.current = 'fast'
+        }, 3000)
+      }, 1500)
     }
   }, [historyMessages, streamFinish])
 
@@ -358,6 +396,7 @@ export function ChatScreen({
     lastAssistantSignature.current = ''
     setWaitingForResponse(false)
     setPinToTop(false)
+    setIsStreaming(false)
   }, [activeFriendlyId, isNewChat, streamStop])
 
   useLayoutEffect(() => {
@@ -782,6 +821,7 @@ export function ChatScreen({
                 notice={gatewayNotice}
                 noticePosition="end"
                 waitingForResponse={waitingForResponse}
+                isStreaming={isStreaming}
                 sessionKey={activeCanonicalKey}
                 pinToTop={pinToTop}
                 pinGroupMinHeight={pinGroupMinHeight}

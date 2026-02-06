@@ -17,6 +17,8 @@ type MessageItemProps = {
   message: GatewayMessage
   toolResultsByCallId?: Map<string, GatewayMessage>
   forceActionsVisible?: boolean
+  /** When true, assistant content uses a fade-in animation for streamed text */
+  isStreaming?: boolean
   wrapperRef?: React.RefObject<HTMLDivElement | null>
   wrapperClassName?: string
   wrapperScrollMarginTop?: number
@@ -165,6 +167,7 @@ function MessageItemComponent({
   message,
   toolResultsByCallId,
   forceActionsVisible = false,
+  isStreaming = false,
   wrapperRef,
   wrapperClassName,
   wrapperScrollMarginTop,
@@ -224,6 +227,7 @@ function MessageItemComponent({
             !isUser
               ? 'bg-transparent w-full'
               : 'bg-primary-100 px-4 py-2.5 max-w-[85%]',
+            !isUser && isStreaming && 'stream-fade-in',
           )}
         >
           {text}
@@ -269,6 +273,7 @@ function areMessagesEqual(
   if (prevProps.forceActionsVisible !== nextProps.forceActionsVisible) {
     return false
   }
+  if (prevProps.isStreaming !== nextProps.isStreaming) return false
   if (prevProps.wrapperClassName !== nextProps.wrapperClassName) return false
   if (prevProps.wrapperRef !== nextProps.wrapperRef) return false
   if (prevProps.wrapperScrollMarginTop !== nextProps.wrapperScrollMarginTop) {

@@ -156,3 +156,17 @@ code {
     background-position: -200% 50%;
   }
 }
+
+/* Fade-in for newly-streamed assistant content */
+@keyframes stream-fade-in {
+  from {
+    opacity: 0.4;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.stream-fade-in {
+  animation: stream-fade-in 0.25s ease-out;
+}

@@ -18,6 +18,8 @@ type ChatMessageListProps = {
   notice?: React.ReactNode
   noticePosition?: 'start' | 'end'
   waitingForResponse: boolean
+  /** True while the assistant response is actively being streamed / fast-polled */
+  isStreaming?: boolean
   sessionKey?: string
   pinToTop: boolean
   pinGroupMinHeight: number
@@ -35,6 +37,7 @@ function ChatMessageListComponent({
   notice,
   noticePosition = 'start',
   waitingForResponse,
+  isStreaming = false,
   sessionKey,
   pinToTop,
   pinGroupMinHeight,
@@ -149,6 +152,9 @@ function ChatMessageListComponent({
                 const forceActionsVisible =
                   typeof lastAssistantIndex === 'number' &&
                   index === lastAssistantIndex
+                const isLastAssistant =
+                  typeof lastAssistantIndex === 'number' &&
+                  index === lastAssistantIndex
                 const hasToolCalls =
                   chatMessage.role === 'assistant' &&
                   getToolCallsFromMessage(chatMessage).length > 0
@@ -160,6 +166,7 @@ function ChatMessageListComponent({
                       hasToolCalls ? toolResultsByCallId : undefined
                     }
                     forceActionsVisible={forceActionsVisible}
+                    isStreaming={isLastAssistant && isStreaming}
                   />
                 )
               })}
@@ -180,6 +187,9 @@ function ChatMessageListComponent({
                   const forceActionsVisible =
                     typeof lastAssistantIndex === 'number' &&
                     realIndex === lastAssistantIndex
+                  const isLastAssistant =
+                    typeof lastAssistantIndex === 'number' &&
+                    realIndex === lastAssistantIndex
                   const wrapperRef =
                     realIndex === lastUserIndex ? lastUserRef : undefined
                   const wrapperClassName =
@@ -197,6 +207,7 @@ function ChatMessageListComponent({
                         hasToolCalls ? toolResultsByCallId : undefined
                       }
                       forceActionsVisible={forceActionsVisible}
+                      isStreaming={isLastAssistant && isStreaming}
                       wrapperRef={wrapperRef}
                       wrapperClassName={wrapperClassName}
                       wrapperScrollMarginTop={wrapperScrollMarginTop}
@@ -225,6 +236,9 @@ function ChatMessageListComponent({
               const forceActionsVisible =
                 typeof lastAssistantIndex === 'number' &&
                 index === lastAssistantIndex
+              const isLastAssistant =
+                typeof lastAssistantIndex === 'number' &&
+                index === lastAssistantIndex
               const hasToolCalls =
                 chatMessage.role === 'assistant' &&
                 getToolCallsFromMessage(chatMessage).length > 0
@@ -236,6 +250,7 @@ function ChatMessageListComponent({
                     hasToolCalls ? toolResultsByCallId : undefined
                   }
                   forceActionsVisible={forceActionsVisible}
+                  isStreaming={isLastAssistant && isStreaming}
                 />
               )
             })}
@@ -269,6 +284,7 @@ function areChatMessageListEqual(
     prev.notice === next.notice &&
     prev.noticePosition === next.noticePosition &&
     prev.waitingForResponse === next.waitingForResponse &&
+    prev.isStreaming === next.isStreaming &&
     prev.sessionKey === next.sessionKey &&
     prev.pinToTop === next.pinToTop &&
     prev.pinGroupMinHeight === next.pinGroupMinHeight &&
