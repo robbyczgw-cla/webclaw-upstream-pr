@@ -7,6 +7,8 @@ Forked from [WebClaw](https://github.com/ibelick/webclaw).
 [![OpenCami](https://img.shields.io/badge/OpenCami-🦎-green)](https://opencami.xyz)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
+![OpenCami Chat Interface](docs/screenshots/opencami-chat.jpg)
+
 ## ✨ Features
 
 ### Core (from WebClaw)
