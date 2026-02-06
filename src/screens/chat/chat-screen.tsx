@@ -48,8 +48,9 @@ import { useChatHistory } from './hooks/use-chat-history'
 import { useChatMobile } from './hooks/use-chat-mobile'
 import { useChatSessions } from './hooks/use-chat-sessions'
 import { useSmartTitle, useLlmTitlesEnabled } from './hooks/use-smart-title'
+import { useStreaming } from './hooks/use-streaming'
 import type { ChatComposerHelpers } from './components/chat-composer'
-import type { HistoryResponse } from './types'
+import type { HistoryResponse, GatewayMessage } from './types'
 import { cn } from '@/lib/utils'
 import { useKeyboardShortcuts } from '@/hooks/use-keyboard-shortcuts'
 import { KeyboardShortcutsDialog } from '@/components/keyboard-shortcuts-dialog'
@@ -195,6 +196,71 @@ export function ChatScreen({
       refreshHistoryRef.current()
     }, FAST_POLL_MS)
   }, [activeFriendlyId, isNewChat])
+
+  // ── Real-time streaming via SSE ──────────────────────────────────────
+  const handleStreamDone = useCallback(
+    (_sk: string) => {
+      // Refetch history to pick up the final message from the Gateway
+      void historyQuery.refetch()
+      streamFinish()
+    },
+    [historyQuery, streamFinish],
+  )
+  const handleStreamError = useCallback(
+    (_err: string) => {
+      // Stream failed — fall back to fast-polling which is already running
+      console.warn('[stream] SSE error, falling back to polling')
+    },
+    [],
+  )
+  const { streaming, startStream, stopStream } = useStreaming({
+    onDone: handleStreamDone,
+    onError: handleStreamError,
+  })
+
+  // Build a synthetic "streaming" assistant message from SSE deltas
+  const streamingMessage = useMemo<GatewayMessage | null>(() => {
+    if (!streaming.active || !streaming.text) return null
+    const content: GatewayMessage['content'] = []
+    // Add tool call indicators
+    for (const tool of streaming.tools) {
+      content.push({
+        type: 'toolCall' as const,
+        name: tool.name,
+        id: tool.id,
+      })
+    }
+    // Add text
+    content.push({ type: 'text' as const, text: streaming.text })
+    return {
+      role: 'assistant',
+      content,
+      __streaming: true,
+      timestamp: Date.now(),
+    } as GatewayMessage
+  }, [streaming.active, streaming.text, streaming.tools])
+
+  // Merge streaming message into display messages
+  const messagesWithStreaming = useMemo(() => {
+    if (!streamingMessage) return displayMessages
+    // If the last display message is an assistant message from fast-polling,
+    // and we have a streaming message with more text, prefer the streaming one.
+    const msgs = [...displayMessages]
+    const lastMsg = msgs[msgs.length - 1]
+    if (lastMsg?.role === 'assistant' && streamingMessage) {
+      const lastText = textFromMessage(lastMsg)
+      if (streaming.text.length > lastText.length) {
+        // Replace the last message with the streaming version
+        msgs[msgs.length - 1] = streamingMessage
+        return msgs
+      }
+      // Otherwise keep the polled version (it may have more content)
+      return msgs
+    }
+    // No assistant message yet — append the streaming one
+    return [...msgs, streamingMessage]
+  }, [displayMessages, streamingMessage, streaming.text])
+
   const stableContentStyle = useMemo<React.CSSProperties>(() => ({}), [])
   refreshHistoryRef.current = function refreshHistory() {
     void historyQuery.refetch()
@@ -393,11 +459,12 @@ export function ChatScreen({
       return
     }
     streamStop()
+    stopStream()
     lastAssistantSignature.current = ''
     setWaitingForResponse(false)
     setPinToTop(false)
     setIsStreaming(false)
-  }, [activeFriendlyId, isNewChat, streamStop])
+  }, [activeFriendlyId, isNewChat, streamStop, stopStream])
 
   useLayoutEffect(() => {
     if (isNewChat) return
@@ -502,6 +569,9 @@ export function ChatScreen({
     })
       .then(async (res) => {
         if (!res.ok) throw new Error(await readError(res))
+        // Start SSE streaming for real-time deltas
+        startStream(sessionKey)
+        // Also start fast-polling as fallback
         streamStart()
       })
       .catch((err) => {
@@ -815,7 +885,7 @@ export function ChatScreen({
           {hideUi ? null : (
             <>
               <ChatMessageList
-                messages={displayMessages}
+                messages={messagesWithStreaming}
                 loading={historyLoading}
                 empty={historyEmpty}
                 notice={gatewayNotice}
