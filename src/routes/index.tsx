@@ -12,6 +12,7 @@ function IndexRoute() {
     navigate({
       to: '/chat/$sessionKey',
       params: { sessionKey: 'main' },
+      search: Object.fromEntries(new URLSearchParams(window.location.search)),
       replace: true,
     })
   }, [navigate])
