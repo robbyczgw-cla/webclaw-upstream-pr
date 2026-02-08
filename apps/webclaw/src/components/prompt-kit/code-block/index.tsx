@@ -1,8 +1,40 @@
 import { useEffect, useMemo, useState } from 'react'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Copy01Icon, Tick02Icon } from '@hugeicons/core-free-icons'
-import { createHighlighter } from 'shiki'
-import type { BundledLanguage, Highlighter } from 'shiki'
+import { createHighlighterCore } from 'shiki/core'
+import { createJavaScriptRegexEngine } from 'shiki/engine/javascript'
+import type { HighlighterCore } from 'shiki/core'
+import vitesseDark from 'shiki/themes/vitesse-dark'
+import vitesseLight from 'shiki/themes/vitesse-light'
+import langBash from 'shiki/langs/bash'
+import langC from 'shiki/langs/c'
+import langCpp from 'shiki/langs/cpp'
+import langCsharp from 'shiki/langs/csharp'
+import langCss from 'shiki/langs/css'
+import langDiff from 'shiki/langs/diff'
+import langDockerfile from 'shiki/langs/dockerfile'
+import langGo from 'shiki/langs/go'
+import langGraphql from 'shiki/langs/graphql'
+import langHtml from 'shiki/langs/html'
+import langJava from 'shiki/langs/java'
+import langJavascript from 'shiki/langs/javascript'
+import langJson from 'shiki/langs/json'
+import langJsx from 'shiki/langs/jsx'
+import langKotlin from 'shiki/langs/kotlin'
+import langMarkdown from 'shiki/langs/markdown'
+import langPhp from 'shiki/langs/php'
+import langPython from 'shiki/langs/python'
+import langRegexp from 'shiki/langs/regexp'
+import langRuby from 'shiki/langs/ruby'
+import langRust from 'shiki/langs/rust'
+import langShell from 'shiki/langs/shell'
+import langSql from 'shiki/langs/sql'
+import langSwift from 'shiki/langs/swift'
+import langToml from 'shiki/langs/toml'
+import langTypescript from 'shiki/langs/typescript'
+import langTsx from 'shiki/langs/tsx'
+import langXml from 'shiki/langs/xml'
+import langYaml from 'shiki/langs/yaml'
 import { useResolvedTheme } from '@/hooks/use-chat-settings'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -15,13 +47,44 @@ type CodeBlockProps = {
   className?: string
 }
 
-let highlighterPromise: Promise<Highlighter> | null = null
+let highlighterPromise: Promise<HighlighterCore> | null = null
 
 function getHighlighter() {
   if (!highlighterPromise) {
-    highlighterPromise = createHighlighter({
-      themes: ['vitesse-light', 'vitesse-dark'],
-      langs: ['text'],
+    highlighterPromise = createHighlighterCore({
+      themes: [vitesseLight, vitesseDark],
+      langs: [
+        langJavascript,
+        langTypescript,
+        langTsx,
+        langJsx,
+        langPython,
+        langBash,
+        langShell,
+        langJson,
+        langYaml,
+        langToml,
+        langMarkdown,
+        langHtml,
+        langCss,
+        langSql,
+        langRust,
+        langGo,
+        langJava,
+        langKotlin,
+        langSwift,
+        langRuby,
+        langPhp,
+        langC,
+        langCpp,
+        langCsharp,
+        langDockerfile,
+        langDiff,
+        langGraphql,
+        langRegexp,
+        langXml,
+      ],
+      engine: createJavaScriptRegexEngine(),
     })
   }
   return highlighterPromise
@@ -49,17 +112,10 @@ export function CodeBlock({
   useEffect(() => {
     let active = true
     getHighlighter()
-      .then(async (highlighter) => {
-        let lang = resolveLanguage(normalizedLanguage)
-        if (lang !== 'text') {
-          try {
-            await highlighter.loadLanguage(lang as BundledLanguage)
-          } catch {
-            lang = 'text'
-          }
-        }
+      .then((highlighter) => {
+        const lang = resolveLanguage(normalizedLanguage)
         const highlighted = highlighter.codeToHtml(content, {
-          lang: lang as BundledLanguage,
+          lang,
           theme: themeName,
         })
         if (active) {

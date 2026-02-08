@@ -1,5 +1,3 @@
-import { bundledLanguages } from 'shiki'
-
 const LANGUAGE_ALIASES: Record<string, string> = {
   js: 'javascript',
   ts: 'typescript',
@@ -12,8 +10,41 @@ const LANGUAGE_ALIASES: Record<string, string> = {
   shell: 'bash',
   yml: 'yaml',
   md: 'markdown',
+  regex: 'regexp',
   txt: 'text',
 }
+
+export const SUPPORTED_LANGUAGES = new Set<string>([
+  'javascript',
+  'typescript',
+  'tsx',
+  'jsx',
+  'python',
+  'bash',
+  'shell',
+  'json',
+  'yaml',
+  'toml',
+  'markdown',
+  'html',
+  'css',
+  'sql',
+  'rust',
+  'go',
+  'java',
+  'kotlin',
+  'swift',
+  'ruby',
+  'php',
+  'c',
+  'cpp',
+  'csharp',
+  'dockerfile',
+  'diff',
+  'graphql',
+  'regexp',
+  'xml',
+])
 
 export function normalizeLanguage(language: string): string {
   const cleaned = language
@@ -27,7 +58,7 @@ export function normalizeLanguage(language: string): string {
 
 export function resolveLanguage(language: string): string {
   const normalized = normalizeLanguage(language)
-  return normalized in bundledLanguages ? normalized : 'text'
+  return SUPPORTED_LANGUAGES.has(normalized) ? normalized : 'text'
 }
 
 export function formatLanguageName(language: string): string {
